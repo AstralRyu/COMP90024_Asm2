@@ -1,24 +1,18 @@
 import couchdb
-import ijson
 import json
 import re
+import time
 
-# authentication
 admin = 'admin_yuki'
 password = 'pwd12345'
 url = f'http://{admin}:{password}@172.26.133.179:5984/'
+couch_db = couchdb.Server(url)
+db_name = 'over_night_data'
 
-# get couchdb instance
-couch = couchdb.Server(url)
-
-# indicate the db name
-db_name = 'over_nightdata'
-
-# if not exist, create one
-if db_name not in couch:
-    db = couch.create(db_name)
+if db_name not in couch_db:
+    database = couch_db.create(db_name)
 else:
-    db = couch[db_name]
+    database = couch_db[db_name]
 
 
 with open("overnight.json", 'r') as f:
@@ -35,7 +29,29 @@ with open("overnight.json", 'r') as f:
             "tourism_region": data["tourism_region"],
             "state": data["state"],
             "rank": data["rank"],
-            "tourist_num":sum
+            "tourist_num": sum
         }
 
-        doc_id, doc_rev = db.save(record)
+        doc_id, doc_rev = database.save(record)
+
+view_name = "_design/info"
+if view_name in database:
+    design_view = database[view_name]
+else:
+    design_view = {"_id": view_name}
+
+design_view['views'] = {
+    "top": {
+        "map": "function (doc) {emit(doc.rank, {region:doc.tourism_region,num:doc.tourist_num});}"
+    },
+    "topRegion": {
+        "map": "function (doc) {emit(doc.rank, doc.tourism_region);}"
+     }
+}
+
+while True:
+    try:
+        database.save(design_view)
+        break
+    except couchdb.http.ResourceConflict:
+        time.sleep(0.5)
