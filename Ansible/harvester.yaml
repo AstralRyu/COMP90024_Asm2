@@ -1,0 +1,56 @@
+---
+- name: Start couchdb service in VM and install python with Mastodon and CouchDB
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: install couchdb in VM
+      ansible.builtin.command:
+        cmd: "sudo snap install couchdb"
+
+    - name: start couchdb service
+      ansible.builtin.command:
+        cmd: "sudo snap start couchdb"
+
+    - name: Expose port 5984
+      ansible.builtin.replace:
+        path: /var/snap/couchdb/current/etc/local.ini
+        regexp: ';port = 5984'
+        replace: 'port = 5984'
+      become: yes
+      become_user: root
+
+    - name: Expose 0.0.0.0
+      ansible.builtin.replace:
+        path: /var/snap/couchdb/current/etc/local.ini
+        regexp: ';bind_address = 0.0.0.0'
+        replace: 'bind_address = 0.0.0.0'
+      become: yes
+      become_user: root
+
+    - name: Add new user
+      ansible.builtin.lineinfile:
+        path: /var/snap/couchdb/current/etc/local.ini
+        insertafter: '[admins]'
+        line: "admin= test"
+      become: yes
+      become_user: root
+
+    - name: install Python3
+      apt:
+        name: python3
+        state: latest
+
+    - name: install pip
+      apt:
+        name: python3-pip
+        state: latest
+
+    - name: install Mastodon, CouchDB and deep_translator
+      pip:
+        name: "Mastodon.py, couchdb, deep_translator"
+        state: latest
+
+    - name: run Python application
+      ansible.builtin.command:
+        cmd: "python3 Mastodon_collect.py"
