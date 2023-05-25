@@ -4,5 +4,5 @@
     * Administrator: with both username and password of "admin".
 
 * To upload Twitter in CouchDB
-   * run mpiexec -np 8 python twitter_filter.py to filter the tweets about travel
+   * run `mpiexec -np 8 python twitter_filter.py` to filter the tweets about travel
    * run over_night_fileInput.py and couchDB_fileInput.py
